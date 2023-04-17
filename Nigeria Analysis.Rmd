@@ -20,6 +20,8 @@ install.packages("installr");
 require(installr)
 updateR()
 
+# This is a simple comment line!
+
 #update.packages(ask = FALSE)
 
 #install.packages("openxlsx")
