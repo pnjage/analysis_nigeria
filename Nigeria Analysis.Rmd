@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #setup
 #install packages
 
-# To be deleted
+# To be deleted- again 
 
 #if(!require(installr)) 
 install.packages("installr"); 
