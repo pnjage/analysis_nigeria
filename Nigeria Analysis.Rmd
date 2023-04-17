@@ -1,0 +1,236 @@
+---
+title: "GAIN Micron"
+author: "Patrick"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Prepare datasets
+#setup
+#install packages
+
+# To be deleted - again
+
+#if(!require(installr)) 
+install.packages("installr"); 
+require(installr)
+updateR()
+
+#update.packages(ask = FALSE)
+
+#install.packages("openxlsx")
+library(openxlsx)
+
+##install.packages("plyr")
+# library(plyr)
+
+#install.packages("dplyr")
+library(dplyr)
+
+#install.packages("hablar")
+library(hablar)
+
+#install.packages("janitor")
+library(janitor)
+
+#install.packages("tidyverse")
+library(tidyverse)
+
+#install.packages("ggplot2")
+library(ggplot2)
+
+#install.packages("remotes")
+#remotes::install_github("davidsjoberg/ggsankey")
+library(ggsankey)
+
+library(readxl)
+#Set working directory
+setwd("URL data set destination")
+
+
+#Market share data preparation
+#Select and open market share breakdown dataset
+DatasetMarketweight_country_Date <- read_excel("Country Marketweight_07-03-2023", na = "-")
+# ensure the following variables are available for categorization (country, food, food type, origin, Producer, BrandProduct, region, retail outlet type, price category)
+#Convert data types of all the variables/columns in dataset
+num(longitude,latitude,price,stock_volume,sample_quantity,sample_cost,lab_sample_ID,quantitative_result_Mg_Kg,result),
+#to be expanded as per RFP market volume share model
+#Market availability preparation
+# Select and open market availability dataset
+#FortiMApp dataset (food type, origin, region, retail outlet type, Producer, BrandProduct, price category)
+DatasetFortiMApp_availability_country <- read_excel("Country FortiMApp data-set-07-03-2023", na = "-")
+#Filter to only select data for specific country and (timepoint) supervisor group: NAFDAC/GAIN 2019
+  dplyr::filter(country==”Nigeria” & supervisior_group_name=="NAFDAC/GAIN 2019") %>%
+#Filter or select active cases / records (Logical code FALSE means not deleted or not archived and should be incorporated in reporting. At least fulfilling minimum component. If no errors in dataset – check no differences after filtering)
+Subset_Nigeria_NafdacGAIN2019 <- DatasetFortiMApp_availability_Nigeria %>%
+  dplyr::filter(report_status==FALSE&brand_detail_status==FALSE,report_detail_status==FALSE) %>%
+
+#Select variables from main dataframe by removing the below variables (variables not needed for the current analysis)
+  subset(select=-c(food_ID,country_ID,region_ID,city_ID,market_place,store_type_ID,supervisior_group_ID,supervisior_group_name,user_name,user_ID,user_email,brand_name_ID,brand_name,product_description,food_type_ID,product_image_url,container_image_url,Supplier_image,fortifcation_logo_image,fortifcation_statement_image,storage_condition,storage_comments,average_product_min,average_product_max,Product_average_content_mg_kg_pos_or_blank,Product_average_content_mg_kg_neg,MU_Max,Lab_Sample_Average_mg_kg_pos_or_blank,Lab_sample_average_content_mg_kg_neg,avg_pro_lab_sample_max,Sample_Average_mg_kg_pos_or_blank,Sample_average_content_mg_kg_neg,avg_pro_sample_max,natural_content_mg_kg,fortification_status_by_measurand,product_fortification_status,product_label_status,imported_exported_by_supplier_ref,imported_exported_by_supplier_deleted,imported_exported_by_company_group_name,imported_exported_by_company_group_description,ackaged_by_company_group_description,packaged_by_supplier_deleted,packaged_by_company_group_name,packaged_by_supplier_ref,produced_by_company_group_name,produced_by_company_group_description,produced_by_supplier_deleted,produced_by_supplier_ref,selected_supplier_by_company_group_description,selected_supplier_by_company_group_description,distributed_by_company_group_name,distributed_by_company_group_description,distributed_by_supplier_deleted,distributed_by_supplier_ref,selected_supplier_deleted,produced_by_supplier_address,packaged_by_supplier_address,imported_exported_by_supplier_address,distributed_by_supplier_address,Nutrient_Amount_count,Nutrient_Unit_count,Nutrient_Compound_count,Nutrient_element_count,sample_quantity,sample_cost,element_ID,lab_method_id,result,result_unit,report_status,brand_detail_status,report_detail_status,result_status,Active,supplier_volume_amount,supplier_volume_percentage,product_status,package_status,brand_volume_status,Incomplete,sample_status, lab_sample_status))
+#generated a new variable called "BrandProduct"
+DatasetNigeria_cleantype$BrandProduct <- paste(DatasetNigeria_cleantype$brand_name, DatasetNigeria_cleantype$product_description, sep = " - ")
+DatasetNigeria_cleantype$BrandProduct <- as.factor(DatasetNigeria_cleantype$BrandProduct)
+#generated a new variable called "Packaging"
+DatasetNigeria_cleantype$Packaging <- paste(DatasetNigeria_cleantype$packaging_container, DatasetNigeria_cleantype$package_amount, DatasetNigeria_cleantype$packaging_unit, sep = " ")
+DatasetNigeria_cleantype$Packaging <- as.factor(DatasetNigeria_cleantype$Packaging
+#generated a new variable called "Packaging_unit_kg_l" and “Product_avg_price_kg_l”
+#Remove/clean 0 and 1 from “price” variable in dataset
+# generate “Package_unit_kg_l”, if “package_unit” is “kg”, then divide “package_amount” by 1, if “package_unit” is “L”, then divide “package_amount” by 1, if “package_unit” is “cl”, then divide “package_amount” by 100, if “package_unit” is “dl”, then divide “package_amount” by 100, if “package_unit” is “g”, then divide “package_amount” by 1000, if “package_unit” is “mg”, then divide “package_amount” by 1000000, if “package_unit” is “ml”, then divide “package_amount” by 1000
+#generate “Product_avg_price_kg_l” and calculate where BrandProduct is the same the average of (“Price” multiplied by “Package_unit_kg_l”)
+
+#generate new variable "package_fortification_logo", "package_fortification_statement", “package_fortification_nutrient”, "package_fortification_labelling" and “package_fortification_labelnutrient”
+Subset_NafdacGAIN2019 <- dplyr::mutate(Subset_NafdacGAIN2019, package_fortification_logo = ifelse(fortifcation_logo == 'No fortification logo', FALSE , TRUE))
+Subset_NafdacGAIN2019 <- dplyr::mutate(Subset_NafdacGAIN2019, package_fortification_statement = ifelse(is.na(fortifcation_statement), FALSE, TRUE))
+Subset_NafdacGAIN2019 <- dplyr::mutate(Subset_NafdacGAIN2019, package_fortification_nutrient = ifelse(Nutrient_Count>0, TRUE, FALSE))
+Subset_NafdacGAIN2019 <- dplyr::mutate(Subset_NafdacGAIN2019, package_fortification_labelling = ifelse(package_fortification_statement == TRUE | package_fortification_logo == TRUE, TRUE, FALSE))
+Subset_NafdacGAIN2019 <- dplyr::mutate(Subset_NafdacGAIN2019, package_fortification_labelnutrient = ifelse(package_fortification_statement == TRUE | package_fortification_logo == TRUE | package_fortification_nutrient == TRUE, TRUE, FALSE))
+
+#generate new Product labelling status variables: "product_fortification_labelling" (logo, statement) and "product_fortification_labelnutrient" (logo, statement, nutrient)
+
+Subset_NafdacGAIN2019 <- Subset_NafdacGAIN2019 %>%
+  dplyr::group_by(BrandProduct) %>% 
+  dplyr::mutate(product_fortification_labelling = any(package_fortification_labelling == TRUE))
+
+Subset_NafdacGAIN2019 <- Subset_NafdacGAIN2019 %>%
+  dplyr::group_by(BrandProduct) %>% 
+  dplyr::mutate(product_fortification_labelnutrient = any(package_fortification_labelnutrient == TRUE))
+#generate “product_fortification_logo", "product_fortification_statement", “product_fortification_nutrient”,
+Subset_NafdacGAIN2019 <- Subset_NafdacGAIN2019 %>%
+  dplyr::group_by(BrandProduct) %>% 
+  dplyr::mutate(product_fortification_logo = any(package_fortification_logo == TRUE))
+Subset_NafdacGAIN2019 <- Subset_NafdacGAIN2019 %>%
+  dplyr::group_by(BrandProduct) %>% 
+  dplyr::mutate(product_fortification_statement = any(package_fortification_statement == TRUE))
+Subset_NafdacGAIN2019 <- Subset_NafdacGAIN2019 %>%
+  dplyr::group_by(BrandProduct) %>% 
+  dplyr::mutate(product_fortification_nutrient = any(package_fortification_nutrient == TRUE))
+
+# generate csv file for new dataset “Subset_Availability_NafdacGAIN2019”
+write.csv(Subset_Availability_NafdacGAIN2019,"C:/Users/sjungjohann/OneDrive - Global Alliance for Improved Nutrition/private/PhD/Data/Nigeria/Subset_Availability_NafdacGAIN2019.csv", row.names = FALSE)
+
+#Fortification status preparation
+# Select and open fortification status dataset, ensure all blank fields are actually blank 
+(BrandProduct, producer)
+DatasetFortiMApp_forti_status_country <- read_excel("Country FortiMApp data-set-07-03-2023", na = "-")
+
+Subset_NafdacGAIN2019 <- DatasetNigeria_cleantype %>%
+# remove all the values from “quantitative_result_Mg_Kg” and “mu” where result is inactivated (result_status = TRUE) and create new variable “result_ppm” and “result_mu”
+  dplyr::mutate(result_ppm = ifelse(result_status == TRUE, NA , quantitative_result_Mg_Kg), result_mu = ifelse(result_status == TRUE, NA , mu))
+#generate “result_ppm_min” “result_ppm_max” by calculating “result_ppm” minus (“mu”/100*“result_ppm”) and respectively “result_ppm” plus (“mu”/100*“result_ppm”)
+
+#generate variable “product_avg_content_pos_or_blank”, “product_avg_min_content_pos_or_blank”, “product_avg_max_content_pos_or_blank” and “product_avg_content_neg”, “product_avg_min_content_neg”, “product_avg_max_content_neg”:
+#by first generating “lab_lab_sample_avg_content_pos_or_blank”, “lab_lab_sample_avg_min_content_pos_or_blank”, “lab_lab_sample_avg_max_content_pos_or_blank” and “lab_lab_sample_avg_content_neg”, “lab_lab_sample_avg_min_content_neg”, “lab_lab_sample_avg_max_content_neg”: by taking the average of all lab sample results (“result_ppm”, “result_ppm_min”, “result_ppm_max”) where “food”, “BrandProduct”, “measurand”, “sample”, “lab_sample_code”, “lab_name” are the same and where all “qualitative_result” is not “Negative”(“Positive” or blank) or respectively where any “qualitative_result” is “Negative”
+#second generating “lab_sample_avg_content_pos_or_blank”, “lab_sample_avg_min_content_pos_or_blank”, “lab_sample_avg_max_content_pos_or_blank” and “lab_sample_avg_content_neg”, “lab_sample_avg_min_content_neg”, “lab_sample_avg_max_content_neg”: by taking the average of all lab sample results (“lab_lab_sample_avg_content_pos_or_blank”, “lab_lab_sample_avg_min_content_pos_or_blank”, “lab_lab_sample_avg_max_content_pos_or_blank” or respectively “lab_lab_sample_avg_content_neg”, “lab_lab_sample_avg_min_content_neg”, “lab_lab_sample_avg_max_content_neg”) where “food”, “BrandProduct”, “measurand”, “sample”, “lab_sample_code” are the same and where all “qualitative_result” is not “Negative”(“Positive” or blank) or respectively where any “qualitative_result” is “Negative”
+#third generating “sample_avg_content_pos_or_blank”, “sample_avg_min_content_pos_or_blank”, “sample_avg_max_content_pos_or_blank” and “sample_avg_content_neg”, “sample_avg_min_content_neg”, “sample_avg_max_content_neg”: by taking the average of all sample results (“lab_sample_avg_content_pos_or_blank”, “lab_sample_avg_min_content_pos_or_blank”, “lab_sample_avg_max_content_pos_or_blank” or respectively “lab_lab_sample_avg_content_neg”, “lab_lab_sample_avg_min_content_neg”, “lab_lab_sample_avg_max_content_neg”) where “food”, “BrandProduct”, “measurand”, “sample” are the same and where all “qualitative_result” is not “Negative”(“Positive” or blank) or respectively where any “qualitative_result” is “Negative”
+#fourth generating “product_avg_content_pos_or_blank”, “product_avg_min_content_pos_or_blank”, “product_avg_max_content_pos_or_blank” and “product_avg_content_neg”: by taking the average of all sample results (“sample_avg_content_pos_or_blank”, “sample_avg_min_content_pos_or_blank”, “sample_avg_max_content_pos_or_blank” or respectively “sample_avg_content_neg”, “sample_avg_min_content_neg”, “sample_avg_max_content_neg”) where “food”, “BrandProduct”, “measurand” are the same and where all “qualitative_result” is not “Negative”(“Positive” or blank) or respectively where any “qualitative_result” is “Negative”
+
+#Subset_NafdacGAIN2019labresults5<-Subset_NafdacGAIN2019 %>% 
+  # dplyr::group_by(food,BrandProduct, measurand, sample) %>%
+  # dplyr::mutate(labsample_quali = ifelse(qualitative_result == "Negative", TRUE, FALSE)) %>% 
+  # dplyr::group_by(food,BrandProduct, measurand, sample) %>% 
+  # add_count(food,BrandProduct, measurand, sample, qualitative_result == TRUE, sort = TRUE)
+
+# Subset_NafdacGAIN2019labresults6<-Subset_NafdacGAIN2019 %>% 
+  # dplyr::mutate(labsample_neg = ifelse(qualitative_result == "Negative", TRUE, NA)) %>% 
+  # dplyr::group_by(food,BrandProduct) %>% 
+  # dplyr::mutate(Count_sample_neg = any(labsample_neg))
+
+
+
+Subset_NafdacGAIN2019labresults<-Subset_NafdacGAIN2019 %>% 
+  dplyr::mutate(labsample_neg = ifelse(qualitative_result == "Negative", TRUE, NA)) %>% 
+  dplyr::group_by(food,BrandProduct, measurand, sample, lab_sample_code, lab_name) %>% 
+  dplyr::filter(is.na(labsample_neg)) %>% 
+  dplyr::filter(!is.na(result_ppm)) %>% 
+  dplyr::mutate(labsample_lab_avg_min = result_ppm-(result_mu/100*result_ppm),labsample_lab_avg_max = result_ppm+(result_mu/100*result_ppm), labsample_lab_avg = mean(result_ppm),labsample_labMU_avg = mean(result_mu), labsample_labMU_max = max(result_mu))
+
+
+
+# Subset_NafdacGAIN2019labresults <- Subset_NafdacGAIN2019 %>%
+  # dplyr::filter(!is.na(result_ppm), qualitative_result != "Negative"|is.na(qualitative_result)) %>% 
+  # dplyr::group_by(BrandProduct, measurand, sample, lab_sample_code, lab_name) %>% 
+  # dplyr::mutate(labsample_lab_avg_min = result_ppm-(mu/100*result_ppm),labsample_lab_avg_max = result_ppm+(mu/100*result_ppm), labsample_lab_avg = mean(result_ppm),labsample_labMU_avg = mean(mu), labsample_labMU_max = max(mu))
+
+ Subset_NafdacGAIN2019labresults1 <- Subset_NafdacGAIN2019labresults %>%
+   dplyr::group_by(BrandProduct, measurand, sample, lab_sample_code) %>% 
+   dplyr::mutate(labsample_avg_min = mean(labsample_lab_avg_min), labsample_avg_max = mean(labsample_lab_avg_max), labsample_avg = mean(labsample_lab_avg), labsample_MU_avg = mean(labsample_labMU_avg), labsample_MU_max = max(labsample_labMU_max))
+
+Subset_NafdacGAIN2019labresults2 <- Subset_NafdacGAIN2019labresults1 %>%
+  dplyr::group_by(BrandProduct, measurand, sample) %>% 
+  dplyr::mutate(sample_avg_min = mean(labsample_avg_min), sample_avg_max = mean(labsample_avg_max), sample_avg = mean(labsample_avg), sample_avg = mean(labsample_avg), sample_MU_avg = mean(labsample_MU_avg), sample_MU_max = max(labsample_MU_max))
+
+Subset_NafdacGAIN2019labresults3 <- Subset_NafdacGAIN2019labresults2 %>%
+  dplyr::group_by(BrandProduct, measurand) %>% 
+  dplyr::mutate(product_avg_min = mean(sample_avg_min), product_avg_max = mean(sample_avg_max), product_avg = mean(sample_avg),product_MU_avg = mean(sample_MU_avg), product_MU_max = max(sample_MU_max))
+
+#generate new variable "measurand_fortification_status_new" 
+#Define measurand fortification status category where product ID/ BrandProduct and measurand are the same:
+#"Not fortified": “product_avg_content_pos_or_blank”=< “natural_content_mg_kg” or where any “qualitative_result” is “Negative”,  
+#"Fortified below standard min":  “product_avg_content_pos_or_blank” is > “natural_content_mg_kg” and “product_avg_max_content_pos_or_blank” < standard_min and where all “qualitative_result” is not “Negative”(“Positive” or blank),
+#"Fortified within standard range": “product_avg_content_pos_or_blank” is > “natural_content_mg_kg” and “product_avg_min_content_pos_or_blank” < standard_max and “product_avg_max_content_pos_or_blank” > standard_min and where all “qualitative_result” is not “Negative”(“Positive” or blank),
+#"Fortified above standard max": “product_avg_content_pos_or_blank” is > “natural_content_mg_kg” and “product_avg_min_content_pos_or_blank” > standard_max or standard_max is blank and where all “qualitative_result” is not “Negative”(“Positive” or blank)
+
+ 
+
+Subset_NafdacGAIN2019labresults4 <- Subset_NafdacGAIN2019labresults3 %>%
+  group_by (BrandProduct, measurand) %>% 
+  dplyr::mutate(Fortification_status_measurand = case_when( (product_avg!= 0 & product_avg_max<standard_min) ~ "Fortified below standard min",
+                                                                    (product_avg!= 0 & product_avg_min<standard_max & product_avg_max>standard_min) ~ "Fortified within standard range",
+                                                                    (product_avg!= 0 & product_avg_min>standard_max|is.na(standard_max)) ~ "Fortified above standard max",
+                                                                    (product_avg== 0  ~ "Not fortified")
+                                                                    )  
+                ) 
+
+
+#generate new variable "product_fortification_status_new":
+#Define product fortification status category where product ID/ BrandProduct is the same:
+#If for a unique ”BrandProduct”, all “measurand_fortification_status_new” is nil, then “product_fortification_status_new” is NA.
+#If for a unique ”BrandProduct”, there is one “measurand_fortification_status_new” or all “measurand_fortification_status_new” have the same category, then “product_fortification_status_new” is same as “measurand_fortification_status_new”.
+#If for a unique ”BrandProduct”, there is two “measurand_fortification_status_new” of which one is ”Not fortified” and the other any other category, then “product_fortification_status_new” is “partially fortified”.
+#If for a unique ”BrandProduct”, any “measurand_fortification_status_new” is “Fortified below standard minimum” and another “measurand_fortification_status_new” is other than “not fortified”, then product fortification status is “Fortified below standard minimum”
+#If for a unique ”BrandProduct”, any “measurand_fortification_status_new” is “Fortified in standard range” and another “measurand_fortification_status_new” is other than “not fortified” or “Fortified below standard minimum” or “Fortified in standard range”, then product fortification status is “Fortified above standard range”. Meaning if one or more are "Fortified in standard range" and the others are "fortified above standard maximum", then product fortification Status is "Fortified above standard maximum".
+
+#generate new variable "product_fortification_status_new2":
+#Define product fortification status category where product ID/ BrandProduct is the same:
+#If "product_fortification_status_new" is “Fortified in standard range” or "Fortified above standard maximum" then "product_fortification_status_new2" is “Fortified above standard minimum”, otherwise "product_fortification_status_new2" is same as "product_fortification_status_new"
+
+#generate new variable "product_fortification_status_new3":
+#Define product fortification status category where product ID/ BrandProduct is the same:
+#If "product_fortification_status_new" is “Fortified below standard minimum” or “Fortified in standard range” or "Fortified above standard maximum" then "product_fortification_status_new3" is “Fortified to any extent”, otherwise "product_fortification_status_new3" is same as "product_fortification_status_new"
+
+
+Subset_NafdacGAIN2019labresults5 <- Subset_NafdacGAIN2019labresults4 %>%
+  dplyr::select(food, BrandProduct, measurand, product_avg_min, product_avg_max, product_avg, product_MU_avg, product_MU_max, Fortification_status_measurand) %>% 
+  group_by(food, BrandProduct) %>% 
+  dplyr::summarize(product_fortification_statut = case_when((all(Fortification_status_measurand == "NA" )) ~ "NA",
+                                                          (all(Fortification_status_measurand == "Not fortified" )) ~ "Not fortified",
+                                                          (all(Fortification_status_measurand == "Fortified below standard min")) ~ "Fortified below standard min",
+                                                          (all(Fortification_status_measurand == "Fortified within standard range")) ~ "Fortified within standard range",
+                                                          (all(Fortification_status_measurand == "Fortified above standard max")) ~ "Fortified above standard max",  
+                                                          (any(Fortification_status_measurand == "Fortified below standard min" & Fortification_status_measurand == "Not fortified")) ~ "Partially fortified",  
+                                                          (any(Fortification_status_measurand == "Fortified within standard range" & Fortification_status_measurand == "Not fortified")) ~ "Partially fortified",  
+                                                          (any(Fortification_status_measurand == "Fortified below standard min" & Fortification_status_measurand == "Fortified within standard range")) ~ "Fortified below standard min", 
+                                                          (any(Fortification_status_measurand == "Fortified within standard range" & Fortification_status_measurand == "Fortified above standard range")) ~ "Fortified above standard min"))   
+                                                          
+
+
+
+
+#generate subset data frames for analysis 
+#Combine Market availability data set and fortification status where BrandProduct is the same.
+#Indicate “product_fortification_status_new” where BrandProduct is the same.
+#Generate new variable for each measurand, (“measurand name_fortification_status_new”): vitaminA_fortification_status_new, iron_fortification_status_new, zinc_fortification_status_new, iodine_fortification_status_new, vitaminD_fortification_status_new  
+#Select country, Food, food type, BrandProduct, selected_supplier_by_supplier_name, origin, region, retail outlet, Packaging, Product_avg_price_kg_l, package_fortification_logo", "package_fortification_statement", “package_fortification_nutrient”, "package_fortification_labelling", “package_fortification_labelnutrient”, "product_fortification_labelling", "product_fortification_labelnutrient", “product_fortification_logo", "Product_fortification_statement", “Product_fortification_nutrient”, “Product_fortification_status_new”, “Product_fortification_status_new2”, “Product_fortification_status_new3”,  vitaminA_fortification_status_new, iron_fortification_status_new, zinc_fortification_status_new, iodine_fortification_status_new, vitaminD_fortification_status_new  
+
+reduce data frame Subset_NafdacGAIN2019
+datasubset <- Subset_NafdacGAIN2019 %>% 
+  subset(select=c(report_ID, food, region,  city, town, longitude, latitude, store_type, BrandProduct, food_type, selected_supplier_by_supplier_name, selected_supplier_country, Food, food type, BrandProduct, selected_supplier_by_supplier_name, origin, region, retail outlet, Packaging, Product_avg_price_kg_l, package_fortification_logo, package_fortification_statement, package_fortification_nutrient, package_fortification_labelling, package_fortification_labelnutrient, product_fortification_labelling, product_fortification_labelnutrient, product_fortification_logo, product_fortification_statement, product_fortification_nutrient, Product_fortification_status_new, Product_fortification_status_new2, Product_fortification_status_new3, vitaminA_fortification_status_new, iron_fortification_status_new, zinc_fortification_status_new, iodine_fortification_status_new, vitaminD_fortification_status_new_:
+
+#Remove duplicates where Food, food type, BrandProduct, Packaging, country, region, retail outlet are the same
+
+datasubset <- distinct(datasubset)
+
